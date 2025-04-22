@@ -8,10 +8,10 @@
 
 ## 🎯 このパッケージの特徴
 
-- ✔️ **`vendor/autoload.php` を使いません**  
-- ✔️ **WordPress プラグイン間でのクラス競合（`ComposerAutoloaderInitXXX`）を回避できます**
-- ✔️ たった **1 行の `require_once` でクラスオートローダーが有効化**されます
-- ✔️ Composer の **`autoload_psr4.php` のみ**を使ってオートロードするため、動作が明確で安全です
+- ✔️ `vendor/autoload.php` を使いません  
+- ✔️ WordPress プラグイン間でのクラス競合（`ComposerAutoloaderInitXXX`）を回避できます  
+- ✔️ たった 1 行の `require_once` でクラスオートローダーが有効化されます  
+- ✔️ PSR-4 クラスの読み込みと `.mo` 翻訳ファイルの読み込みが自動で行われます
 
 ---
 
@@ -25,13 +25,13 @@ composer require itmaroon/loader-package
 
 ---
 
-## 🚀 プラグインでの利用手順（導入事例）
+## 🚀 プラグインでの利用手順
 
-### 1. WordPress プラグイン構成例
+### プラグイン構成例
 
 ```
 your-plugin/
-├── plugin.php                      ← プラグインのエントリポイント
+├── plugin.php
 ├── composer.json
 ├── src/
 │   └── YourClass.php
@@ -45,11 +45,18 @@ your-plugin/
 │       └── autoload_psr4.php
 ```
 
-### 2. `plugin.php` に次の1行を追加
+### プラグインのエントリーポイントでたった1行
 
 ```php
 require_once __DIR__ . '/vendor/itmar/loader-package/src/register_autoloader.php';
 ```
+
+これだけで：
+
+- ✅ クラスオートローダーが有効化
+- ✅ 翻訳ファイルも自動で読み込まれます
+
+---
 
 ### 3. クラスを普通に使うだけ！
 
@@ -74,11 +81,46 @@ WordPress では、複数のプラグインがそれぞれ Composer を使って
 
 ---
 
+## 🌐 国際化（翻訳ファイル）の自動読み込み
+
+このパッケージは、**PSR-4 マッピングに基づいて各パッケージの翻訳ファイル（`.mo`）を自動読み込みする機能**を備えています。  
+利用者は `textdomain` を手動で指定したり、`load_plugin_textdomain()` を呼び出す必要はありません。
+
+### 翻訳ファイルの設置ルール
+
+```
+vendor/
+└── itmar/
+    └── block-class-package/
+          └── languages/
+              └── block-class-package-ja.mo
+```
+
+| 項目             | 値例                             | 備考                          |
+|------------------|----------------------------------|-------------------------------|
+| テキストドメイン | `block-class-package`            | 名前空間から自動推測されます |
+| ファイル名       | `block-class-package-ja.mo`      | `get_locale()` に準拠        |
+| 配置パス         | `assets/languages/`              | パッケージルート基準         |
+
+### 自動読み込みの仕組み
+
+- `autoload_psr4.php` のすべての名前空間を走査
+- それぞれの `assets/languages/` に対応する `.mo` を探して自動で読み込む
+
+### テキストドメインの命名規則
+
+| 名前空間                        | テキストドメイン |
+|--------------------------------|------------------|
+| `Itmar\BlockClassPackage\`   | `block-class-package` |
+| `Vendor\AwesomePlugin\`      | `awesome-plugin` |
+
+---
+
 ## 🔍 技術的なポイント
 
-- `register_autoloader.php` が `Loader.php` を呼び出し、`spl_autoload_register()` を登録します
-- `autoload_psr4.php` に定義された PSR-4 マップに従って、クラスを自動的に読み込みます
-- `autoload_classmap.php` や `autoload_static.php` は一切使用しません
+- `Loader.php` が `autoload_psr4.php` を走査し、`spl_autoload_register()` を登録
+- 各名前空間に基づいて `.mo` を `load_plugin_textdomain()` で自動読み込み
+- `autoload_classmap.php` や `autoload_static.php` は使用しません
 
 ---
 
@@ -98,17 +140,12 @@ https://itmaroon.net
 
 ## 🙌 関連パッケージ
 
-このオートローダーと連携して利用できるパッケージ例：
-
 - [`itmar/block-class-package`](https://packagist.org/packages/itmar/block-class-package)  
-  Gutenberg ブロック関連の共通ユーティリティパッケージ。  
-  オートローダーを使ってクラスを自動読み込み可能。
+  Gutenberg ブロック関連の共通ユーティリティ。クラス・翻訳対応済み。
 
 ---
 
 ## 💡 補足：複数プラグイン間での共通利用にも対応
 
-このパッケージは、`mu-plugins` などで **一度だけ `require_once` しておく構成**にも対応可能です。  
-全プラグインで共通オートローダーとして使用したい場合は、`itmar-core` などのコアプラグインに設置するのがおすすめです。
-
----
+このパッケージは `mu-plugins/` 等に一括で導入して、**全プラグイン共通のローダーとして使うことも可能**です。  
+複数のパッケージ・プラグインでの競合を防ぎつつ、安全に共通ロジックを管理できます。
