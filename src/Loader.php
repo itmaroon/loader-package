@@ -21,13 +21,17 @@ class Loader
         foreach (self::$prefixes as $prefix => $dirs) {
             foreach ($dirs as $dir) {
                 $textdomain = self::extract_textdomain_from_namespace($prefix);
+                $base_path  = dirname($dir);
+                $languages_path = $base_path . '/languages';
+                if ($textdomain && is_dir($languages_path)) {
+                    // コンポーネントのディレクトリを取得
+                    $locale = determine_locale();
+                    $mofile = $languages_path . '/' . $textdomain . '-' . $locale . '.mo';
 
-                if ($textdomain && file_exists($dir . '/../../languages')) {
-                    load_plugin_textdomain(
-                        $textdomain,
-                        false,
-                        plugin_basename(realpath($dir . '/../../')) . '/languages'
-                    );
+                    if (file_exists($mofile)) {
+                        // テキストドメインを直接ロードする（フィルターに依存しない）
+                        load_textdomain($textdomain, $mofile);
+                    }
                 }
             }
         }
